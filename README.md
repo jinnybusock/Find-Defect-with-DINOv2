@@ -1,3 +1,10 @@
+# Find Defect with DINOv2 and SAM
+
+반도체 웨이퍼 결함 탐지 및 RAG 기반 분석 프로젝트입니다.
+
+## 📂 발표 자료
+👉 [프로젝트 발표 자료 다운로드 (Defect RAG_정희진.pptx)](./Defect%20RAG_정희진.pptx)
+
 :new: [2025-12-18] *Added support for loading XRay-DINO backbone following [Advancing human-centric AI for robust X-ray analysis through holistic self-supervised learning](https://arxiv.org/pdf/2405.01469), more details are [here](#pretrained-backbone-xray-dino)*
 
 :new: [2025-12-16] *Added Channel-Adaptive DINO code following [Scaling Channel-Adaptive Self-Supervised Learning](https://openreview.net/forum?id=pT8sgtRVAf), more details are [here](#dinov2-for-biology)*
