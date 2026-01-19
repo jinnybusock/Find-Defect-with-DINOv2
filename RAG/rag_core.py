@@ -11,26 +11,26 @@ from collections import Counter
 # 작은 이미지 처리 기능 & 저장/불러오기 기능
 
 class DefectRAG_Enterprise:
-    def __init__(self, tile_size=224, stride=112):
+    def __init__(self, tile_size=518, stride=259):
         self.tile_size = tile_size
         self.stride = stride
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"🏭 [RAG 시스템] 초기화 (Device: {self.device})")
 
-        # DINOv2 모델 로드
-        self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+        # 모델을 'vitl14'(Large)로 변경
+        # ---------------------------------------------------------
+        # s: Small (384차원) -> b: Base (768차원) -> l: Large (1024차원)
+        self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vitl14')
         self.model.to(self.device)
         self.model.eval()
 
         self.transform = T.Compose([
-            T.Resize((224, 224)),
+            T.Resize((518, 518)),  # 해상도도 518로 유지 (도메인 맞춤)
             T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
 
-        # 차원 개수: 384
-
-        self.dimension = 384
+        self.dimension = 1024
         self.index = faiss.IndexFlatL2(self.dimension)
         self.metadata = []
 
@@ -165,15 +165,14 @@ class DefectRAG_Enterprise:
             # 1. 상세 표 출력 (어떤 파일을 참고했는지 바로 보여줌)
             print(f"{rank + 1:<6} {defect_type:<12} {dist:<10.2f} {similarity_score:<10.2f} {ref_filename:<30}")
 
-            # 2. 판정을 위한 데이터 집계 (Normal 제외)
-            if defect_type.lower() not in ['good', 'normal', 'ok']:
-                if defect_type not in detailed_board:
-                    detailed_board[defect_type] = {'total_score': 0, 'files': []}
+            # 모든 결함 종류(Good 포함)를 공평하게 점수판에 등록!
+            if defect_type not in detailed_board:
+                detailed_board[defect_type] = {'total_score': 0, 'files': []}
 
-                # 점수 누적
-                detailed_board[defect_type]['total_score'] += similarity_score
-                # 어떤 파일 때문에 이 점수가 나왔는지 기록 (파일명, 점수)
-                detailed_board[defect_type]['files'].append((ref_filename, similarity_score))
+            # 점수 누적
+            detailed_board[defect_type]['total_score'] += similarity_score
+            # 어떤 파일 때문에 이 점수가 나왔는지 기록 (파일명, 점수)
+            detailed_board[defect_type]['files'].append((ref_filename, similarity_score))
 
         print("-" * 90)
 
