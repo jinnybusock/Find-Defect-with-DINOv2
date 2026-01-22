@@ -1,16 +1,20 @@
-from rag_core import DefectRAG_Enterprise  # 우리가 만든 rag_core 불러오기
+from rag_core import DefectRAG_Postgres
 
-# DB 구축용
+# ★ Docker 또는 로컬 DB 정보에 맞게 수정하세요 ★
+DB_CONFIG = {
+    "host": "localhost",
+    "port": "5432",
+    "dbname": "postgres",       # 기본 DB 이름
+    "user": "postgres",         # 기본 유저
+    "password": "3510" # 설치할 때 설정한 비번
+}
 
 if __name__ == "__main__":
-    # 1. 시스템 준비
-    rag = DefectRAG_Enterprise()
+    # 1. PostgreSQL 연결
+    rag = DefectRAG_Postgres(DB_CONFIG)
 
-    # 2. 학습할 폴더 경로 (바탕화면 Train 폴더)
+    # 2. 데이터 폴더 경로
     train_root = r"C:\Users\hjchung\Desktop\RAG Train"
 
-    # 3. 폴더 읽어서 DB 만들기
+    # 3. DB에 데이터 밀어넣기
     rag.ingest_data_folder(train_root)
-
-    # 4. ★ DB를 파일로 저장하기! (이게 핵심)
-    rag.save_database(db_path="my_semicon_db.index", meta_path="my_semicon_meta.pkl")
