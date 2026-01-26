@@ -80,23 +80,31 @@ class DefectRAG_Postgres:
         with psycopg.connect(**self.db_info, autocommit=True) as conn:
             register_vector(conn)
             with conn.cursor() as cursor:
+                # =================================================================
+                # [수정된 부분 1] SQL 쿼리: L2 거리(<->) -> 코사인 유사도(<=>)
+                # 1 - (embedding <=> query)를 통해 코사인 유사도(Cosine Similarity)를 계산
+                # 유사도가 높은 순으로 내림차순(DESC) 정렬
+                # =================================================================
                 cursor.execute("""
-                    SELECT defect_type, filename, (embedding <-> %s) as distance
+                    SELECT defect_type, filename, 1 - (embedding <=> %s) as similarity
                     FROM defect_images
-                    ORDER BY distance ASC
+                    ORDER BY similarity DESC
                     LIMIT %s
                 """, (query_vector, top_k))
 
                 results = cursor.fetchall()
 
         detailed_board = {}
-        print(f"\n🔍 PostgreSQL 검색 결과 (Top {top_k}):")
+        print(f"\n🔍 PostgreSQL 검색 결과 (Top {top_k} - 코사인 유사도 기준):")
         print("-" * 90)
 
-        for defect_type, fname, dist in results:
-            # 점수 계산
-            score = 100000 / (dist + 1.0)
-            print(f"   - [{defect_type}] {fname} (거리: {dist:.4f}, 점수: {score:.2f})")
+        for defect_type, fname, sim in results:
+            # =================================================================
+            # [수정된 부분 2] 점수 계산 로직 변경
+            # 코사인 유사도는 -1 ~ 1 사이의 값이므로, 이를 100점 만점 척도로 변환
+            # =================================================================
+            score = sim * 100
+            print(f"   - [{defect_type}] {fname} (유사도: {sim:.4f}, 점수: {score:.2f}점)")
 
             if defect_type not in detailed_board:
                 detailed_board[defect_type] = {'total_score': 0, 'files': []}
@@ -107,7 +115,7 @@ class DefectRAG_Postgres:
         print("-" * 90)
 
         # =====================================================
-        # ★ 여기가 복구된 최종 판정 로직입니다 ★
+        # 최종 판정 로직
         # =====================================================
         if not detailed_board:
             print("✅ 최종 판정: 알 수 없음 (DB에 데이터가 없거나 검색 실패)")
@@ -119,7 +127,7 @@ class DefectRAG_Postgres:
             best_data = sorted_defects[0][1]  # 1등 정보
 
             print(f"🏆 최종 판정: '{best_defect}'")
-            print(f"   (이유: 유사도 점수 합계 {best_data['total_score']:.2f}점으로 1위)")
+            print(f"   (이유: 코사인 유사도 점수 합계 {best_data['total_score']:.2f}점으로 1위)")
 
             print(f"\n   📂 [{best_defect} 판정의 근거 데이터]")
             for i, (fname, score) in enumerate(best_data['files']):
