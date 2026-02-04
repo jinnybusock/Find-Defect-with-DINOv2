@@ -1,4 +1,4 @@
-from rag_core import DefectRAG_Postgres  # [수정] 이제 Enterprise 대신 Postgres를 불러옵니다.
+from rag_core import DefectRAG_Postgres  # Postgres를 불러옵니다.
 import os
 import sys
 
